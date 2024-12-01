@@ -48,11 +48,13 @@ One amazing feature of Go is how easy it is to cross-compile for different opera
 and architectures.
 To do this, simply set the `$GOOS` and `$GOARCH` environment variables to the target OS and
 architecture respectively, and invoke `go build` as usual.
+
 The following commonly used values can be set for `$GOOS`:
 - `linux`
 - `windows`
 - `darwin`
-and the following for `$GOARCH`:
+
+The following values can be set for `$GOARCH`:
 - `amd64`
 - `386`
 - `arm`
@@ -62,10 +64,12 @@ and the following for `$GOARCH`:
 
 #### Code Style
 
-The [Go Styleguide](https://google.github.io/styleguide/go/) describes style rules in detail.
-Code format should always match that which is output by the `gofmt` tool.
+The [Go Styleguide](https://google.github.io/styleguide/go/) describes code style guidelines in detail.
 
-Here are some basic rules as a quick summary:
+However, different to other languages, the code formatting rules in Go are not really established on paper.
+Rather, the correct source code formatting is applied by invoking the `gofmt` tool.
+
+As for variable and package naming conventions, here are some basic rules as a quick summary:
 - use `MixedCaps` or `camelCase` for multi-word names
     - constants are `MixedCaps` when exported and `camelCase` when not exported
 - package names should contain only lowercase characters: `helloworld` and not `helloWorld` or `hello-world`
@@ -94,6 +98,10 @@ func main() {
 By convention, the package name is the same as the last element of the import path.
 For example, the `math/rand` package comprises files which begin with the statement
 `package rand`.
+
+The Go build tool views all `.go` files under the same directory as being in the same package.
+This also means that you cannot declare `package main` in two different `.go` files within the
+same package.
 
 In a Go package, a name is exported if it begins with a capital letter: `Pizza` would be
 exported, while `pizza` would not.
