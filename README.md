@@ -28,6 +28,11 @@ func main() {
 }
 ```
 
+To run the code, use the `go run` command:
+```bash
+go run helloworld.go
+```
+
 #### Formatting
 
 The [gofmt](https://pkg.go.dev/cmd/gofmt) command can be used to format the source file:
@@ -162,7 +167,7 @@ func main() {
 }
 ```
 
-Variable declarations can take initializers, one per variiable.
+Variable declarations can take initializers, one per variable.
 If an initializer is present, the type declaration can be omitted:
 ```go
 var s string
@@ -228,3 +233,108 @@ Constants are declared like variables, but using the `const` keyword instead:
 const pi = 3.14
 ```
 They can be strings, booleans, character or numeric values.
+
+### Loops
+
+Go only has one type of looping construct, the `for` loop.
+
+The `for` loop has three basic components, separated by semicolons and not surrounded by braces:
+- the init statement: executed before the first iteration
+- the condition expression: evaluated before every iteration
+- the post statement: executed at the end of every iteration
+
+```go
+sum := 0
+for i := 0; i < 10; i++ {
+    sum += 1
+}
+```
+
+The init and post statements are optional:
+```go
+sum := 1
+for ; sum < 1000; {
+    sum += sum
+}
+```
+
+The init and post statements can also be completely omitted, which is equivalent to a `while` loop
+in other languages:
+```go
+sum := 1
+for sum < 1000 {
+    sum += sum
+}
+```
+
+Omitting the condition expression is equivalent to an infinite loop:
+```go
+package main
+
+import "fmt"
+
+func main() {
+    for {
+        fmt.Print("HA")
+    }
+}
+```
+
+### Conditionals
+
+Go's `if` statements are like its `for` loops:
+```go
+if x < 0 {
+    x = 0
+} else if x < 100 {
+    x = 100
+} else {
+    x = 1000
+}
+```
+
+Like `for`, `if` statements can also execute a short expression, such as an assignment before the
+execution of the conditional statements:
+```go
+x := 10
+n := 2
+m := 999
+if v := math.Pow(x, n); v < m {
+    fmt.Println(v, "(small)")
+} else {
+    fmt.Println(v, "(big)")
+}
+```
+Values declared in this expression are only valid within the scope of the `if`/`else` block.
+
+### Defer statements
+
+The `defer` statement defers the execution of a function until the end of the surrounding function:
+```go
+package main
+
+import "fmt"
+
+func main() {
+    defer fmt.Println(" world!")
+
+    fmt.Print("Hello")
+}
+```
+
+The defer statement is evaluated immediately, but its execution is deferred until the end of the surrounding
+function.
+This is particularly useful for deallocating resources independently of the rest of the function's flow:
+```go
+func writeFile(v string) {
+    f, err := os.Create("file.txt")
+    if err != nil {
+        panic("Could not create file!")
+    }
+    defer f.close()
+
+    // ...
+    fmt.Fprintf(f, v)
+    // ...
+}
+```
