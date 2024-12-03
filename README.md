@@ -1,6 +1,6 @@
 # Go Notes
 
-This repo contains notes and example code for the Go language.
+This repo contains notes, code challenges and example code for learning the Go language.
 
 Go is a statically typed, compiled general purpose programming language, designed at Google
 by Ken Thompson among others.
