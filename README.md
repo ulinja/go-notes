@@ -151,6 +151,34 @@ The return value names should be used to document their meaning.
 A `return` statement without arguments (also known as a *naked return*) returns the named
 return values.
 
+Functions are values too, which can be passed around just like other values by their function name.
+
+Go functions may be closures. Closures are functions which reference values from outside its body
+(yet not in the global scope).
+The following examples illustrate a counter variable which pollutes the global scope, in contrast
+to a closure counter function which maintains its own state:
+```go
+var count int   // the count var is global
+
+func increment() int {
+    count++
+    return count
+}
+```
+
+```go
+func incrementer() func() int {
+    count := 0
+    return func() int {
+        count++
+        return count
+    }
+}
+
+inc := incrementer() // Each instance has its own state
+fmt.Println(inc())   // Output: 1
+```
+
 ### Variables
 
 The `var` statement declares a list of variables:
@@ -364,3 +392,321 @@ fmt.Println(*p) // read i through pointer p
 which is also known as *dereferencing* or *indirecting*.
 
 Unlike C, Go does not have pointer arithmetic.
+
+### Structs
+
+A `struct` is a collection of fields.
+Struct fields are accessed using dot notation:
+```go
+package main
+
+import "fmt"
+
+type Vertex struct {
+    X int
+    Y int
+}
+
+func main() {
+    v := Vertex{1, 2}
+    v.X = 4
+    fmt.Println(v.X)
+}
+```
+
+Struct fields can also be accessed through a struct pointer.
+To access the field `X` of a struct when we have a struct pointer `p`
+we could write `(*p).X`. This notation is cumbersome though, instead we
+can just write `p.X` without the explicit dereference.
+```go
+v := Vertex{1, 2}
+p := &v
+p.X = 1e9
+```
+
+A struct literal denotes a newly allocated struct value by listing the values
+of its fields.
+
+You can list just a subset of fields by using the `Name:` syntax (and the order of
+named fields is irrelevant).
+
+The special prefix `&` returns a pointer to the struct value.
+```go
+package main
+
+import "fmt"
+
+type Vertex struct {
+    X, Y int
+}
+
+var (
+    v1 = Vertex{1, 2}   // has type Vertex
+    v2 = Vertex{X: 1}   // Y:0 is implicit
+    v3 = Vertex{}       // X:0 Y:0
+    p = &Vertex{1, 2}   // has type *Vertex
+)
+
+func main() {
+    fmt.Println(v1, v2, v3, p)
+}
+```
+
+### Arrays
+
+The type `[n]T` is an array of `n` values of type `T`.
+
+The expression
+```go
+var a [10]int
+```
+declares `a` as an array of ten integers.
+
+An array's size is part of its type, so arrays cannot be resized.
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+    var a [2]string
+    a[0] = "Hello"
+    a[1] = "World"
+    fmt.Println(a[0], a[1], a)
+
+    primes := [6]int{2, 3, 5, 7, 11, 13}
+    fmt.Println(primes)
+}
+```
+
+### Slices
+
+Arrays have a fixed size. A slice, on the other hand, is a dynamically-sized,
+flexible view into the elements of an array. In practice, slices are much more
+common than arrays.
+
+The type `[]T` is a slice with elements of type `T`.
+
+A slice is created by specifying two indices, a low and high bound, separated by a colon:
+```go
+a[low:high]
+```
+This selects a half-open range which includes the first element, but excludes the last one.
+
+The following expression creates a slice which includes elements 1 through 3 of `a`:
+```go
+a[1:4]
+```
+
+A slice does not store any data, it just describes a section of an underlying array.
+Changing the elements of a slice modifies the contents of the underlying array.
+Other slices that share the same underlying array will see those changes.
+
+A slice literal is like an array literal without the length.
+
+This is an array literal:
+```go
+[3]bool{true, true, false}
+```
+
+And this creates the same array as above, then builds a slice that references it:
+```go
+[]bool{true, true, false}
+```
+
+When slicing, you may omit the high or low bounds to use their defaults instead.
+The default is zero for the low bound and the length of the slice for the high bound.
+
+For the array
+```go
+var a [10]int
+```
+
+these slice expressions are equivalent:
+```go
+a[0:10]
+a[:10]
+a[0:]
+a[:]
+```
+
+A slice has both a *length* and a *capacity*.
+The length and capacity of a slice `s` can be obtained using the expressions
+`len(s)` and `cap(s)`.
+
+The length of a slice is the number of elements it contains.
+
+The capacity is the number of elements in the underlying array, counting from
+the first element in the slice.
+
+A slice's length can be extended by re-slicing it, provided it has sufficient
+capacity.
+```go
+package main
+
+import "fmt"
+
+func main() {
+    s := []int{2, 3, 5, 7, 11, 13}
+    printSlice(s)
+
+    // Slice the slice to give it zero length.
+    s = s[:0]
+    printSlice(s)
+
+    // Extend its length.
+    s = s[:4]
+    printSlice(s)
+
+    // Drop its first two values.
+    s = s[2:]
+    printSlice(s)
+}
+
+func printSlice(s []int) {
+    fmt.Printf("len=%d cap=%d %v\n", len(s), cap(s), s)
+}
+```
+
+The zero value of a slice is `nil`.
+A nil slice has length and capacity zero and no underlying array.
+```go
+var s []int
+```
+
+Slices can be created with the builtin `make` function.
+This is how you create dynamically-sized arrays.o
+
+The `make` function allocates a zeroed array and returns a slice that refers to
+that array:
+```go
+a := make([]int, 5) // len(a)=5
+```
+
+To specify a capacity, specify a third argument to `make`:
+```go
+b := make([]int, 0, 5) // len(b)=0 cap(b)=5
+```
+
+Slices can contain any type, including other slices.
+
+It is common to append values to a slice, which the builtin `append` method is used for:
+```
+func append(s []T, vs ...T) []T
+```
+The first parameter of `append` is a slice of type `T`, and the rest are `T` values appended
+to the slice.
+The resulting value of `append` is a slice of type `T` containing all the elements of the
+original slice, as well as the appended values.
+
+If the underlying array of `s` is too small to fit all appended values, a bigger array will be
+allocated, and the returned slice will point to this newly allocated array.
+
+For more information, see the [documentation for append](https://go.dev/pkg/builtin/#append)
+and the [article on slice usage and internals](https://go.dev/blog/go-slices-usage-and-internals).
+
+The `range` form of the `for` loop iterates over a slice or map.
+When ranging over a slice, two values are returned for each iteration: the current index, and a copy
+of the element at that index.
+```go
+package main
+
+import "fmt"
+
+func main() {
+    nums := []int{2, 4, 6, 8, 10}
+    for i, v := range nums {
+        fmt.Printf("Value at %d is %d\n", i, v)
+    }
+}
+```
+
+You can skip the index or value by assiging to `_`:
+```go
+for _, v := range nums {
+    // ...
+}
+```
+
+If you only want the index, you can omit `v`:
+```go
+for i := range nums {
+    // ...
+}
+```
+
+### Maps
+
+A map maps keys to values.
+
+The zero value of a map is `nil`. A `nil` map has no keys, nor can keys be added to it.
+
+The `make` function returns a map of the given type, initialized and ready for use.
+```go
+package main
+
+import "fmt"
+
+type Vertex struct {
+    Lat, Long float64
+}
+
+var m map[string]Vertex
+
+func main() {
+    m = make(map[string]Vertex)
+    m["Bell Labs"] = Vertex{40.123, -74.231}
+}
+```
+
+Map literals are like struct literals, but the keys are required:
+```go
+var m = map[string]Vertex{
+    "Bell Labs": Vertex{
+        40.123, -74.231,
+    },
+    "Google": Vertex{
+        54.543, 43.123,
+    }
+}
+```
+
+If the top name is just the name of a type, you can omit it from the elements of the literal:
+```go
+var m = map[string]Vertex{
+    "Bell Labs": {
+        40.123, -74.231,
+    },
+    "Google": {
+        54.543, 43.123,
+    }
+}
+```
+
+Insert or update an element in a map using square bracket notation:
+```go
+m[key] = elem
+```
+
+Retrieve an element:
+```go
+elem = m[key]
+```
+
+Delete an element:
+```go
+delete(m, key)
+```
+
+Test that a key is present with a two value assignment:
+```go
+elem, ok = m[key]
+```
+If `key` is in `m`, `elem` will be its value and `ok` will be `true`.
+If not, `ok` is `false` and `elem` will be the zero value of that map's type.
+
+If `elem` or `ok` are not yet declared, you can use the short declaration form:
+```go
+elem, ok := m[key]
+```
