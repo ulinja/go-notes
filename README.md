@@ -338,3 +338,29 @@ func writeFile(v string) {
     // ...
 }
 ```
+
+### Pointers
+
+Go has pointers :fire:.
+
+A pointer holds the memory address of a value.
+
+The type `*T` is a pointer to a `T` value, with the initial value of `nil`:
+```go
+var p *int
+```
+
+The `&` operator generates a pointer to its operand:
+```go
+var i := 42
+p = &i
+```
+
+The `*` operator denotes the pointers underlying value:
+```go
+fmt.Println(*p) // read i through pointer p
+*p = 21 // set i through pointer p
+```
+which is also known as *dereferencing* or *indirecting*.
+
+Unlike C, Go does not have pointer arithmetic.
