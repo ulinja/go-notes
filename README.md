@@ -79,6 +79,12 @@ As for variable and package naming conventions, here are some basic rules as a q
     - constants are `MixedCaps` when exported and `camelCase` when not exported
 - package names should contain only lowercase characters: `helloworld` and not `helloWorld` or `hello-world`
 
+#### Structuring A Go Project
+
+The Go docs provide some guidance on [how to structure a Go project](https://go.dev/doc/modules/layout),
+as well as tips on [how to distribute Go modules](https://go.dev/doc/modules/managing-source) for others
+to use.
+
 ## The Go Language
 
 ### Packages
