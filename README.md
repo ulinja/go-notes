@@ -661,7 +661,7 @@ type Vertex struct {
 var m map[string]Vertex
 
 func main() {
-    m = make(map[string]Vertex)
+    m := make(map[string]Vertex)
     m["Bell Labs"] = Vertex{40.123, -74.231}
 }
 ```
@@ -680,7 +680,7 @@ var m = map[string]Vertex{
 
 If the top name is just the name of a type, you can omit it from the elements of the literal:
 ```go
-var m = map[string]Vertex{
+var m := map[string]Vertex{
     "Bell Labs": {
         40.123, -74.231,
     },
@@ -715,4 +715,91 @@ If not, `ok` is `false` and `elem` will be the zero value of that map's type.
 If `elem` or `ok` are not yet declared, you can use the short declaration form:
 ```go
 elem, ok := m[key]
+```
+
+### Methods
+
+Go does not have classes. However, *methods* can be defined on types.
+
+A method is a function with a special argument called a *receiver*.
+The receiver appears in its own argument list between the `func` keyowrd and the method name:
+```go
+package main
+
+import (
+    "fmt"
+    "math"
+)
+
+type Vertex struct{
+    X, Y float64
+}
+
+func (v Vertex) Abs() float64 {
+    return math.Sqrt(v.X*v.X + v.Y*v.Y)
+}
+
+func main() {
+    v := Vertex{3, 4}
+    fmt.Println(v.Abs())
+}
+```
+In this example, the `Abs` method has a receiver `v` of type `Vertex`.
+
+You can declare methods on non-struct types as well:
+```go
+type MyThing uint
+
+func (thing MyThing) DoSomething() {
+    //...
+}
+```
+
+However, methods must be declared in the same module in which the receiver's type is declared.
+
+Methods can (and most oftenly do) have pointer receivers, in which case they modify the value to which
+the receiver points.
+
+### Interfaces
+
+An *interface type* is a set of method signatures.
+
+A value of an interface can hold any value that implements those methods.
+```go
+package main
+
+import (
+	"fmt"
+)
+
+type SelfIdentifier interface {
+	IdentifySelf() string
+}
+
+type Human struct {
+	Name string
+}
+
+func (h *Human) IdentifySelf() string {
+	return fmt.Sprintf("Hello, I am %s.", h.Name)
+}
+
+type Robot struct {
+	SerialNumber uint
+}
+
+func (r *Robot) IdentifySelf() string {
+	identifier := fmt.Sprintf("0X010-%d", r.SerialNumber)
+	return fmt.Sprintf("Beep Boop. I am %s.", identifier)
+}
+
+func main() {
+	h := Human{"John Smith"}
+	r := Robot{4269}
+
+	entities := []SelfIdentifier{&h, &r}
+	for _, e := range entities {
+		fmt.Println(e.IdentifySelf())
+	}
+}
 ```
