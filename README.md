@@ -769,37 +769,180 @@ A value of an interface can hold any value that implements those methods.
 package main
 
 import (
-	"fmt"
+    "fmt"
 )
 
 type SelfIdentifier interface {
-	IdentifySelf() string
+    IdentifySelf() string
 }
 
 type Human struct {
-	Name string
+    Name string
 }
 
 func (h *Human) IdentifySelf() string {
-	return fmt.Sprintf("Hello, I am %s.", h.Name)
+    return fmt.Sprintf("Hello, I am %s.", h.Name)
 }
 
 type Robot struct {
-	SerialNumber uint
+    SerialNumber uint
 }
 
 func (r *Robot) IdentifySelf() string {
-	identifier := fmt.Sprintf("0X010-%d", r.SerialNumber)
-	return fmt.Sprintf("Beep Boop. I am %s.", identifier)
+    identifier := fmt.Sprintf("0X010-%d", r.SerialNumber)
+    return fmt.Sprintf("Beep Boop. I am %s.", identifier)
 }
 
 func main() {
-	h := Human{"John Smith"}
-	r := Robot{4269}
+    h := Human{"John Smith"}
+    r := Robot{4269}
 
-	entities := []SelfIdentifier{&h, &r}
-	for _, e := range entities {
-		fmt.Println(e.IdentifySelf())
-	}
+    entities := []SelfIdentifier{&h, &r}
+    for _, e := range entities {
+        fmt.Println(e.IdentifySelf())
+    }
 }
 ```
+
+### Goroutines
+
+A *goroutine* is a lightweight thread managed by the Go runtime:
+```go
+go f(x, y, z)
+```
+starts a new goroutine running
+```go
+f(x, y, z)
+```
+
+The evaluation of `f`, `x`, `y` and `z` happens in the current goroutine, and the execution
+of `f` happens in the new goroutine.
+
+Goroutines run in the same address space, so care must be taken to synchronize access to shared memory.
+The `sync` package provides useful primitives for this purpose.
+
+### Channels
+
+Channels are a typed conduit through which you can send and receive values with the channel operator `<-`.
+```go
+ch <- v    // Send v to channel ch.
+v := <-ch  // Receive from ch, and
+           // assign value to v.
+```
+The data flows in the direction of the arrow.
+
+Like maps and slices, channels must be created before use:
+```go
+ch := make(chan int)
+```
+
+By default, sends and receives block until the other side is ready, allowing goroutines to sync without
+explicitly settings locks or condition variables.
+
+```go
+package main
+
+import "fmt"
+
+func sum(s []int, c chan int) {
+    sum := 0
+    for _, v := range s {
+        sum += v
+    }
+    c <- sum // send sum to c
+}
+
+func main() {
+    s := []int{7, 2, 8, -9, 4, 0}
+
+    c := make(chan int)
+    go sum(s[:len(s)/2], c)
+    go sum(s[len(s)/2:], c)
+    x, y := <-c, <-c // receive from c
+
+    fmt.Println(x, y, x+y)
+}
+```
+
+Channels can be *buffered*. Provide the buffer length as the second argument to `make` to initialize a
+buffered channel:
+```go
+ch := make(chan int, 100)
+```
+Sends to a buffered channel block only when the buffer is full.
+Receives block when the buffer is empty.
+
+A sender can `close` a channel to indicate that no more values will be sent.
+Receivers can test whether a channel is closed by assigning a second parameter to the receive expression:
+```go
+v, ok := <-ch
+```
+`ok` is `false` when there are no more values to receive and the channel is closed.
+
+The loop `for i := range c` receives values from the channel repeatedly until it is closed.
+
+> Only the sender should close a channel, never the receiver.
+
+```go
+package main
+
+import (
+    "fmt"
+)
+
+func fibonacci(n int, c chan int) {
+    x, y := 0, 1
+    for i := 0; i < n; i++ {
+        c <- x
+        x, y = y, x+y
+    }
+    close(c)
+}
+
+func main() {
+    c := make(chan int, 10)
+    go fibonacci(cap(c), c)
+    for i := range c {
+        fmt.Println(i)
+    }
+}
+```
+
+### Select
+
+The `select` statement lets a goroutine wait on multiple communication operations.
+It blocks until one of its cases can run, then executes that case.
+If multiple cases can run, it chooses one at random.
+
+```go
+package main
+
+import "fmt"
+
+func fibonacci(c, quit chan int) {
+    x, y := 0, 1
+    for {
+        select {
+        case c <- x:
+            x, y = y, x+y
+        case <-quit:
+            fmt.Println("quit")
+            return
+        }
+    }
+}
+
+func main() {
+    c := make(chan int)
+    quit := make(chan int)
+    go func() {
+        for i := 0; i < 10; i++ {
+            fmt.Println(<-c)
+        }
+        quit <- 0
+    }()
+    fibonacci(c, quit)
+}
+```
+
+The `default` case is run if no other case is ready.
